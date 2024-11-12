@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aylo.dmp</groupId>
+    <artifactId>aspectj-nosource-mcve</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.release>11</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.9.7</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <executions>
+                    <execution>
+                        <!--
+                            Compiling classes and putting them in a place where they can be modified before the
+                            weaving is performed.
+                        -->
+                        <id>default-compile</id>
+                        <configuration>
+                            <compilerArgs>
+                                <arg>-d</arg>
+                                <arg>${project.build.directory}/unwoven-classes</arg>
+                                <arg>-proc:full</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>replace-message</id>
+                        <phase>compile</phase>
+                        <goals><goal>java</goal></goals>
+                        <configuration>
+                            <mainClass>org.example.ReplaceMessage</mainClass>
+                            <addOutputToClasspath>false</addOutputToClasspath>
+                            <additionalClasspathElements>
+                                <additionalClasspathElement>${project.build.directory}/unwoven-classes</additionalClasspathElement>
+                            </additionalClasspathElements>
+                            <arguments>
+                                <argument>${project.build.directory}/unwoven-classes/org/example/Main.class</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- You should expect FUBAR! in the output if already compiled classes were not overwritten by weaving. -->
+                        <id>perform-test</id>
+                        <goals><goal>java</goal></goals>
+                        <configuration>
+                            <mainClass>org.example.Main</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.15.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>11</source>
+                    <complianceLevel>11</complianceLevel>
+                    <showWeaveInfo>true</showWeaveInfo>
+                    <verbose>true</verbose>
+                    <!-- Specifying no source prevents the weaving to be performed, unless forceAjcCompile is set to true -->
+                    <!-- If sources are specified, the weaving will overwrite already compiled classes -->
+                    <sources/>
+                    <forceAjcCompile>true</forceAjcCompile>
+                    <!--aspectDirectory>${project.build.sourceDirectory}/org/example/aspects}</aspectDirectory-->
+                    <weaveDirectories>
+                        <weaveDirectory>${project.build.directory}/unwoven-classes</weaveDirectory>
+                    </weaveDirectories>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
